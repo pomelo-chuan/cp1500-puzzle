@@ -22,7 +22,7 @@ python3 -m http.server 5173 --bind 0.0.0.0
 |卡片|54 × 86 mm|KC 耗材，PCC-CP400 纸匣|
 |KC-18IS 方形贴纸|54 × 54 mm|贴纸区域，非整张卡片；须匹配佳能贴纸打印流程|
 
-参考入口：https://www.canon-europe.com/printers/selphy-cp1500/specifications/ 。开发环境访问官网被网络策略拦截，以上标称数据尚未在本次任务中在线核实，需对照本地区说明书与实际耗材。八枚小贴纸不提供定位模板。
+参考入口：https://www.canon-europe.com/printers/selphy-cp1500/specifications/ 。已于本次任务核对官网明信片、卡片、方形贴纸尺寸和 300 × 300 DPI 分辨率。欧洲规格未列 L 尺寸，因此 L 模板仅作地区待核实选项，使用前需核对本地区说明书与实际耗材。八枚小贴纸不提供定位模板。
 
 导出像素 = mm × DPI / 25.4，未写入物理 DPI 元数据。打印时选择对应纸张；无边距可能裁切。3 mm 安全线仅预览，不导出。建议先少量试印。600 DPI 不会增加原片或打印机自身的分辨率。
 
