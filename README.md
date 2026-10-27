@@ -11,7 +11,7 @@ npm test
 python3 -m http.server 5173 --bind 0.0.0.0
 ```
 
-支持单张、双联、四/六/九宫格与主图拼贴；裁切、旋转、顺序调整；白边、间距、拍立得底边、暖色和黑白；EXIF DateTimeOriginal / DateTime 日期或手动日期；300/600 DPI 像素尺寸 PNG/JPEG 导出。EXIF 日期解析仅针对 JPEG，其他格式可手填。每次导出当前页，未使用照片有数量提示。HEIC/RAW 请先转换，最多 50 张、单文件 40 MB。
+支持单张、双联、四/六/九宫格与主图拼贴；裁切、旋转、顺序调整；白边、间距、拍立得底边、暖色和黑白；画布拖拽裁切、滚轮缩放、四角调整相框大小、移动相框（切换模式或按 Shift 拖动），右侧控件同步；EXIF DateTimeOriginal / DateTime 日期或手动日期，每张可独立显示或隐藏、默认橘色；300/600 DPI 像素尺寸 高清 JPG 一键导出（默认 600 DPI 像素尺寸，JPEG 最高质量）。EXIF 日期解析仅针对 JPEG，其他格式可手填。每次导出当前页，未使用照片有数量提示。HEIC/RAW 请先转换，最多 50 张、单文件 40 MB。
 
 ## 打印尺寸
 
@@ -24,8 +24,12 @@ python3 -m http.server 5173 --bind 0.0.0.0
 
 参考入口：https://www.canon-europe.com/printers/selphy-cp1500/specifications/ 。已于本次任务核对官网明信片、卡片、方形贴纸尺寸和 300 × 300 DPI 分辨率。欧洲规格未列 L 尺寸，因此 L 模板仅作地区待核实选项，使用前需核对本地区说明书与实际耗材。八枚小贴纸不提供定位模板。
 
-导出像素 = mm × DPI / 25.4，未写入物理 DPI 元数据。打印时选择对应纸张；无边距可能裁切。3 mm 安全线仅预览，不导出。建议先少量试印。600 DPI 不会增加原片或打印机自身的分辨率。
+导出像素 = mm × DPI / 25.4，写入所选物理 DPI 元数据。打印时选择对应纸张；无边距可能裁切。3 mm 安全线仅预览，不导出。建议先少量试印。600 DPI 不会增加原片或打印机自身的分辨率。
 
 ## GitHub Pages
 
 `.github/workflows/pages.yml` 在 main 推送时运行测试、上传纯静态文件并部署。首次需要仓库 Settings → Pages → Source 选择 **GitHub Actions**，并允许 Actions 执行。查看 Actions 中 Deploy GitHub Pages 的运行结果确认发布。预期地址：https://pomelo-chuan.github.io/cp1500-puzzle/ 。没有服务端或密钥需求。
+
+## 浏览器交互回归
+
+有 Playwright 和 Chromium 的环境中，可运行 `PLAYWRIGHT_MODULE=/path/to/playwright CHROMIUM_PATH=/usr/bin/chromium node tests/browser.cjs`。先在另一终端启动本地开发服务。脚本验证鼠标操作、独立日期、高清 JPG 下载及手机布局。

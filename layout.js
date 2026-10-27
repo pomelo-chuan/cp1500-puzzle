@@ -1,6 +1,165 @@
-export const papers={postcard:[100,148],l:[89,119],card:[54,86],square:[54,54]};
-export const layouts={single:{name:'单张',cols:1,rows:1},duo:{name:'双联',cols:1,rows:2},four:{name:'四宫格',cols:2,rows:2},six:{name:'六宫格',cols:2,rows:3},nine:{name:'九宫格',cols:3,rows:3},hero:{name:'主图拼贴',cols:2,rows:3}};
-export function size(paper,orientation,dpi){let [w,h]=papers[paper];if(orientation==='landscape')[w,h]=[h,w];return {w,h,pxW:Math.round(w*dpi/25.4),pxH:Math.round(h*dpi/25.4)}}
-export function cells(layout,w,h,margin,gap){const {cols,rows}=layouts[layout];const cw=(w-2*margin-(cols-1)*gap)/cols,ch=(h-2*margin-(rows-1)*gap)/rows;const out=[];if(layout==='hero'){out.push({x:margin,y:margin,w:w-2*margin,h:ch*2+gap});for(let c=0;c<2;c++)out.push({x:margin+c*(cw+gap),y:margin+2*(ch+gap),w:cw,h:ch});return out}for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)out.push({x:margin+c*(cw+gap),y:margin+r*(ch+gap),w:cw,h:ch});return out}
+export const papers = {
+  postcard: [100, 148],
+  l: [89, 119],
+  card: [54, 86],
+  square: [54, 54],
+};
+export const layouts = {
+  single: { name: "单张", cols: 1, rows: 1 },
+  duo: { name: "双联", cols: 1, rows: 2 },
+  four: { name: "四宫格", cols: 2, rows: 2 },
+  six: { name: "六宫格", cols: 2, rows: 3 },
+  nine: { name: "九宫格", cols: 3, rows: 3 },
+  hero: { name: "主图拼贴", cols: 2, rows: 3 },
+};
+export function size(paper, orientation, dpi) {
+  let [w, h] = papers[paper];
+  if (orientation === "landscape") [w, h] = [h, w];
+  return {
+    w,
+    h,
+    pxW: Math.round((w * dpi) / 25.4),
+    pxH: Math.round((h * dpi) / 25.4),
+  };
+}
+export function cells(layout, w, h, margin, gap) {
+  const { cols, rows } = layouts[layout];
+  const cw = (w - 2 * margin - (cols - 1) * gap) / cols,
+    ch = (h - 2 * margin - (rows - 1) * gap) / rows;
+  const out = [];
+  if (layout === "hero") {
+    out.push({ x: margin, y: margin, w: w - 2 * margin, h: ch * 2 + gap });
+    for (let c = 0; c < 2; c++)
+      out.push({
+        x: margin + c * (cw + gap),
+        y: margin + 2 * (ch + gap),
+        w: cw,
+        h: ch,
+      });
+    return out;
+  }
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      out.push({
+        x: margin + c * (cw + gap),
+        y: margin + r * (ch + gap),
+        w: cw,
+        h: ch,
+      });
+  return out;
+}
 // Read TIFF DateTimeOriginal (and DateTime fallback) inside JPEG APP1 EXIF.
-export function exifDate(buffer){try{const v=new DataView(buffer);if(v.getUint16(0)!==0xffd8)return '';let p=2;while(p+4<v.byteLength){if(v.getUint8(p)!==255)break;const marker=v.getUint8(p+1);if(marker===0xda||marker===0xd9)break;const length=v.getUint16(p+2);if(length<2||p+2+length>v.byteLength)break;if(marker===0xe1&&v.getUint32(p+4)===0x45786966){const base=p+10,end=p+2+length,le=v.getUint16(base)===0x4949;if(v.getUint16(base+2,le)!==42)return '';const seen=new Set();function ifd(offset){if(seen.has(offset))return '';seen.add(offset);const start=base+offset;if(start<base||start+2>end)return '';const n=v.getUint16(start,le);let fallback='';for(let i=0;i<n;i++){const t=start+2+i*12;if(t+12>end)break;const tag=v.getUint16(t,le),value=v.getUint32(t+8,le);if(tag===0x8769){const found=ifd(value);if(found)return found}if(tag===0x9003||tag===0x132){const count=v.getUint32(t+4,le),at=base+value;if(count<19||at+19>end)continue;let s='';for(let j=0;j<19;j++)s+=String.fromCharCode(v.getUint8(at+j));if(/^\d{4}:\d{2}:\d{2}/.test(s)){const date=s.slice(0,10).replaceAll(':','-');if(tag===0x9003)return date;fallback=date}}}return fallback}return ifd(v.getUint32(base+4,le))}p+=2+length}}catch{}return ''}
+export function exifDate(buffer) {
+  try {
+    const v = new DataView(buffer);
+    if (v.getUint16(0) !== 0xffd8) return "";
+    let p = 2;
+    while (p + 4 < v.byteLength) {
+      if (v.getUint8(p) !== 255) break;
+      const marker = v.getUint8(p + 1);
+      if (marker === 0xda || marker === 0xd9) break;
+      const length = v.getUint16(p + 2);
+      if (length < 2 || p + 2 + length > v.byteLength) break;
+      if (marker === 0xe1 && v.getUint32(p + 4) === 0x45786966) {
+        const base = p + 10,
+          end = p + 2 + length,
+          le = v.getUint16(base) === 0x4949;
+        if (v.getUint16(base + 2, le) !== 42) return "";
+        const seen = new Set();
+        function ifd(offset) {
+          if (seen.has(offset)) return "";
+          seen.add(offset);
+          const start = base + offset;
+          if (start < base || start + 2 > end) return "";
+          const n = v.getUint16(start, le);
+          let fallback = "";
+          for (let i = 0; i < n; i++) {
+            const t = start + 2 + i * 12;
+            if (t + 12 > end) break;
+            const tag = v.getUint16(t, le),
+              value = v.getUint32(t + 8, le);
+            if (tag === 0x8769) {
+              const found = ifd(value);
+              if (found) return found;
+            }
+            if (tag === 0x9003 || tag === 0x132) {
+              const count = v.getUint32(t + 4, le),
+                at = base + value;
+              if (count < 19 || at + 19 > end) continue;
+              let s = "";
+              for (let j = 0; j < 19; j++)
+                s += String.fromCharCode(v.getUint8(at + j));
+              if (/^\d{4}:\d{2}:\d{2}/.test(s)) {
+                const date = s.slice(0, 10).replaceAll(":", "-");
+                if (tag === 0x9003) return date;
+                fallback = date;
+              }
+            }
+          }
+          return fallback;
+        }
+        return ifd(v.getUint32(base + 4, le));
+      }
+      p += 2 + length;
+    }
+  } catch {}
+  return "";
+}
+
+// Set physical print density without re-encoding the JPEG image data.
+export function jpegDensity(bytes, dpi) {
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) throw new Error("Invalid JPEG");
+  const output = bytes.slice();
+  const view = new DataView(
+    output.buffer,
+    output.byteOffset,
+    output.byteLength,
+  );
+  let p = 2;
+  while (p + 4 <= output.length && output[p] === 0xff) {
+    const marker = output[p + 1];
+    if (marker === 0xda || marker === 0xd9) break;
+    const length = view.getUint16(p + 2);
+    if (length < 2 || p + 2 + length > output.length) break;
+    if (
+      marker === 0xe0 &&
+      length >= 16 &&
+      output[p + 4] === 0x4a &&
+      output[p + 5] === 0x46 &&
+      output[p + 6] === 0x49 &&
+      output[p + 7] === 0x46 &&
+      output[p + 8] === 0
+    ) {
+      output[p + 11] = 1; // pixels per inch
+      view.setUint16(p + 12, dpi);
+      view.setUint16(p + 14, dpi);
+      return output;
+    }
+    p += length + 2;
+  }
+  const header = new Uint8Array([
+    0xff,
+    0xe0,
+    0,
+    16,
+    0x4a,
+    0x46,
+    0x49,
+    0x46,
+    0,
+    1,
+    2,
+    1,
+    dpi >> 8,
+    dpi & 255,
+    dpi >> 8,
+    dpi & 255,
+    0,
+    0,
+  ]);
+  const result = new Uint8Array(bytes.length + header.length);
+  result.set(bytes.subarray(0, 2));
+  result.set(header, 2);
+  result.set(bytes.subarray(2), 20);
+  return result;
+}
