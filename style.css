@@ -579,3 +579,96 @@ button:disabled {
 .frame-position button {
   flex: 1;
 }
+
+/* Desktop workbench: each sidebar scrolls without moving the preview. */
+@media (min-width: 1051px) {
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+  main {
+    height: calc(100dvh - 86px);
+    display: flex;
+    flex-direction: column;
+    padding-top: 24px;
+    padding-bottom: 12px;
+  }
+  .intro {
+    flex-shrink: 0;
+    margin-bottom: 20px;
+  }
+  .workspace {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+  .settings,
+  .library {
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+  }
+  .stage {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .stage-top,
+  .stage-bottom,
+  .stage > .hint,
+  .stage > .notice {
+    flex-shrink: 0;
+  }
+  .stage .canvas-wrap {
+    flex: 1;
+    min-height: 0;
+    padding: 18px;
+  }
+  .stage #preview {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  main > footer {
+    flex-shrink: 0;
+    margin: 12px 0;
+  }
+  main > .guide {
+    flex-shrink: 0;
+    max-height: 20dvh;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+@media (min-width: 1051px) and (max-height: 850px) {
+  header {
+    height: 56px;
+  }
+  main {
+    height: calc(100dvh - 56px);
+    padding-top: 12px;
+  }
+  .intro {
+    margin-bottom: 12px;
+  }
+  .intro .eyebrow,
+  .intro p,
+  .stage > .notice {
+    display: none;
+  }
+  .intro h1 {
+    font-size: 22px;
+    margin: 0;
+  }
+  .intro .primary {
+    padding: 10px 18px;
+  }
+  .stage-top,
+  .stage-bottom {
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+}

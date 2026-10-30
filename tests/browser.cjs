@@ -62,13 +62,38 @@ const assert = require("node:assert/strict");
     beforeDrag,
     "dragging does not edit the image",
   );
-  const scrollBefore = await page.evaluate(() => window.scrollY);
+  const beforeScroll = await page.locator("#preview").boundingBox();
+  for (const selector of [".settings", ".library"]) {
+    const panel = page.locator(selector);
+    const bounds = await panel.boundingBox();
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 80);
+    await page.mouse.wheel(0, 500);
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector).scrollTop > 0,
+      selector,
+    );
+    const after = await page.locator("#preview").boundingBox();
+    assert.deepEqual(
+      after,
+      beforeScroll,
+      "sidebar scroll does not move the preview",
+    );
+    await panel.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(100);
+    assert.equal(
+      await page.evaluate(() => window.scrollY),
+      0,
+      "sidebar boundary does not scroll the page",
+    );
+  }
+  await page.locator(".settings").evaluate((el) => (el.scrollTop = 0));
+  await page.mouse.move(a.x, a.y);
   await page.mouse.wheel(0, 150);
-  await page.waitForFunction((y) => window.scrollY > y, scrollBefore);
   assert.equal(
     await page.locator("#zoom").inputValue(),
     "1",
-    "wheel scrolls the page instead of zooming",
+    "wheel does not zoom the image",
   );
   await page.getByRole("button", { name: "增大照片缩放", exact: true }).click();
   assert.equal(await page.locator("#zoom").inputValue(), "1.1");
@@ -281,6 +306,17 @@ const assert = require("node:assert/strict");
       () => document.documentElement.scrollWidth > innerWidth,
     ),
     false,
+  );
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).overflowY),
+    "visible",
+    "mobile retains page scrolling",
+  );
+  assert.equal(
+    await page
+      .locator(".settings")
+      .evaluate((el) => getComputedStyle(el).overflowY),
+    "visible",
   );
   await page.screenshot({ path: "/tmp/selphy-new-mobile.png", fullPage: true });
   assert.deepEqual(errors, []);
