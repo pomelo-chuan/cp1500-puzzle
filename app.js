@@ -1,3 +1,4 @@
+import { PhotoRenderer } from "./renderer.js";
 import { layouts, size, cells, exifDate, jpegDensity } from "./layout.js";
 const $ = (id) => document.getElementById(id),
   photos = [];
@@ -44,108 +45,25 @@ function dateText(p) {
       ? `${y}.${m}.${d}`
       : raw;
 }
-function paint(canvas, preview = false) {
-  const dim = dimensions(),
-    scale = preview ? Math.min(1200 / dim.pxW, 1500 / dim.pxH, 1) : 1;
-  canvas.width = Math.round(dim.pxW * scale);
-  canvas.height = Math.round(dim.pxH * scale);
-  if (preview) {
-    canvas.style.width = `min(100%, ${((window.innerWidth <= 650 ? 480 : 600) * dim.w) / dim.h}px)`;
-  }
-  const ctx = canvas.getContext("2d");
-  const sx = canvas.width / dim.w,
-    sy = canvas.height / dim.h;
-  ctx.scale(sx, sy);
-  ctx.fillStyle = $("background").value;
-  ctx.fillRect(0, 0, dim.w, dim.h);
+function updateScene() {
   const boxes = frameBoxes();
-  for (let i = 0; i < boxes.length; i++) {
-    const r = boxes[i],
-      p = photos[i];
-    if (!p) {
-      if (!preview) continue;
-      ctx.fillStyle = "#f0f1ea";
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.fillStyle = "#bac2b0";
-      ctx.font = `${Math.min(r.w, r.h) * 0.17}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(String(i + 1), r.x + r.w / 2, r.y + r.h / 2 + 2);
-      continue;
-    }
-    const bottom = $("polaroid").checked ? Math.min(9, r.h * 0.22) : 0;
-    const ih = r.h - bottom;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(r.x, r.y, r.w, ih);
-    ctx.clip();
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(r.x, r.y, r.w, ih);
-    const rotated = p.rotation % 180 !== 0,
-      iw = rotated ? p.img.naturalHeight : p.img.naturalWidth,
-      hh = rotated ? p.img.naturalWidth : p.img.naturalHeight;
-    const factor = Math.max(r.w / iw, ih / hh) * p.zoom,
-      dw = iw * factor,
-      dh = hh * factor;
-    ctx.translate(
-      r.x + r.w / 2 - (p.x * (dw - r.w)) / 2,
-      r.y + ih / 2 - (p.y * (dh - ih)) / 2,
-    );
-    ctx.rotate((p.rotation * Math.PI) / 180);
-    ctx.filter =
-      $("effect").value === "mono"
-        ? "grayscale(1)"
-        : $("effect").value === "warm"
-          ? "sepia(.28) saturate(.85) contrast(1.04)"
-          : "none";
-    ctx.drawImage(
-      p.img,
-      (-p.img.naturalWidth * factor) / 2,
-      (-p.img.naturalHeight * factor) / 2,
-      p.img.naturalWidth * factor,
-      p.img.naturalHeight * factor,
-    );
-    ctx.restore();
-    {
-      const date = dateText(p);
-      if (date) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(r.x, r.y, r.w, r.h);
-        ctx.clip();
-        ctx.font = `${Math.max(1.4, Math.min(2.5, r.w / 14))}px monospace`;
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = $("date-color").value;
-        if (!bottom) {
-          ctx.shadowColor = "#000b";
-          ctx.shadowBlur = 2 * sx;
-        }
-        if (bottom && $("date-color").value === "#ffffff")
-          ctx.fillStyle = "#3e463b";
-        ctx.fillText(
-          date,
-          r.x + r.w - 2,
-          r.y + (bottom ? ih + bottom / 2 : ih - 3),
-          r.w - 4,
-        );
-        ctx.restore();
-      }
-    }
-  }
-  if (preview && $("safe").checked) {
-    ctx.save();
-    ctx.strokeStyle = "#889c7c99";
-    ctx.lineWidth = 0.15;
-    ctx.setLineDash([1, 1]);
-    ctx.strokeRect(3, 3, dim.w - 6, dim.h - 6);
-    ctx.restore();
-  }
-  if (preview) drawSelection(ctx, boxes);
+  renderer.update({
+    dim: dimensions(),
+    boxes,
+    photos,
+    selected,
+    background: $("background").value,
+    polaroid: $("polaroid").checked,
+    effect: $("effect").value,
+    dates: photos.map(dateText),
+    dateColor: $("date-color").value,
+    safe: $("safe").checked,
+  });
   return boxes.length;
 }
 function render() {
   const d = dimensions(),
-    capacity = paint($("preview"), true);
+    capacity = updateScene();
   $("dimensions").textContent = `${d.w} × ${d.h} mm · ${$("dpi").value} DPI`;
   $("summary").textContent =
     `${d.pxW} × ${d.pxH} px · 已放入 ${Math.min(photos.length, capacity)} / ${capacity} 张`;
@@ -352,6 +270,7 @@ $("rotate").onclick = () => {
 $("reset").onclick = resetCrop;
 
 const canvas = $("preview");
+const renderer = new PhotoRenderer(canvas);
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 function baseBoxes() {
   const { w, h } = dimensions();
@@ -380,42 +299,6 @@ function saveFrame(i, r) {
     sy: r.h / b.h,
   };
 }
-function drawSelection(ctx, boxes) {
-  const r = boxes[selected];
-  if (!r || !photos[selected]) return;
-  const rect = canvas.getBoundingClientRect(),
-    dim = dimensions(),
-    unit = dim.w / (rect.width || 400);
-  ctx.save();
-  ctx.strokeStyle = "#305746";
-  ctx.lineWidth = 1.5 * unit;
-  ctx.setLineDash([]);
-  ctx.strokeRect(r.x, r.y, r.w, r.h);
-  ctx.restore();
-}
-function point(event) {
-  const r = canvas.getBoundingClientRect(),
-    d = dimensions();
-  return {
-    x: ((event.clientX - r.left) * d.w) / r.width,
-    y: ((event.clientY - r.top) * d.h) / r.height,
-  };
-}
-function hit(pos) {
-  const boxes = frameBoxes();
-  for (let i = boxes.length - 1; i >= 0; i--) {
-    const r = boxes[i];
-    if (
-      photos[i] &&
-      pos.x >= r.x &&
-      pos.x <= r.x + r.w &&
-      pos.y >= r.y &&
-      pos.y <= r.y + r.h
-    )
-      return i;
-  }
-  return -1;
-}
 function resetCrop() {
   const p = photos[selected];
   if (p) {
@@ -425,7 +308,7 @@ function resetCrop() {
   }
 }
 canvas.addEventListener("click", (event) => {
-  const index = hit(point(event));
+  const index = renderer.hit(event.clientX, event.clientY);
   if (index < 0 || selected === index) return;
   selected = index;
   list();
@@ -508,9 +391,10 @@ $("export").onclick = async () => {
   }
   const button = $("export");
   button.disabled = true;
-  const output = document.createElement("canvas");
+  let output;
   try {
-    const n = paint(output),
+    output = renderer.exportCanvas();
+    const n = frameBoxes().length,
       unused = Math.max(0, photos.length - n);
     const blob = await new Promise((resolve) =>
       output.toBlob(resolve, "image/jpeg", 1),
@@ -539,7 +423,7 @@ $("export").onclick = async () => {
     toast("导出失败，请尝试 300 DPI");
   } finally {
     button.disabled = false;
-    output.width = output.height = 0;
+    if (output) output.width = output.height = 0;
   }
 };
 render();
