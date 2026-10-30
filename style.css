@@ -535,47 +535,47 @@ dialog .row {
   }
 }
 #preview {
-  touch-action: none;
+  touch-action: auto;
   user-select: none;
-  cursor: grab;
-}
-#preview.dragging {
-  cursor: grabbing !important;
+  cursor: pointer;
 }
 #preview:focus-visible {
   outline: 2px solid #ff943d;
   outline-offset: 5px;
 }
-.canvas-tools {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin: 8px 0;
-}
-.canvas-tools label {
-  flex-shrink: 0;
-  margin: 0;
-}
-.canvas-tools select {
-  width: auto;
-  margin-left: 8px;
-}
-.canvas-tools .hint {
-  margin: 0;
-}
 button:disabled {
   opacity: 0.6;
   cursor: wait;
-}
-@media (max-width: 650px) {
-  .canvas-tools {
-    align-items: start;
-    flex-direction: column;
-    gap: 8px;
-  }
 }
 #preview {
   height: auto;
   max-height: none;
   object-fit: fill;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  gap: 6px;
+  align-items: center;
+}
+.stepper input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 8px;
+  background: #fffefa;
+  color: var(--ink);
+}
+.stepper button {
+  padding: 8px 0;
+}
+.frame-position {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+.frame-position button {
+  flex: 1;
 }

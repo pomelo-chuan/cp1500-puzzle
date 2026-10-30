@@ -11,7 +11,7 @@ npm test
 python3 -m http.server 5173 --bind 0.0.0.0
 ```
 
-支持单张、双联、四/六/九宫格与主图拼贴；裁切、旋转、顺序调整；白边、间距、拍立得底边、暖色和黑白；画布拖拽裁切、滚轮缩放、四角调整相框大小、移动相框（切换模式或按 Shift 拖动），右侧控件同步；EXIF DateTimeOriginal / DateTime 日期或手动日期，每张可独立显示或隐藏、默认橘色；300/600 DPI 像素尺寸 高清 JPG 一键导出（默认 600 DPI 像素尺寸，JPEG 最高质量）。EXIF 日期解析仅针对 JPEG，其他格式可手填。每次导出当前页，未使用照片有数量提示。HEIC/RAW 请先转换，最多 50 张、单文件 40 MB。
+支持单张、双联、四/六/九宫格与主图拼贴；裁切、旋转、顺序调整；白边、间距、拍立得底边、暖色和黑白；点击画布选中，右侧加减按钮与数值输入调整裁切、缩放和相框大小，方向按钮移动相框；画布不响应拖拽或滚轮缩放；EXIF DateTimeOriginal / DateTime 日期或手动日期，每张可独立显示或隐藏、默认橘色；300/600 DPI 像素尺寸 高清 JPG 一键导出（默认 600 DPI 像素尺寸，JPEG 最高质量）。EXIF 日期解析仅针对 JPEG，其他格式可手填。每次导出当前页，未使用照片有数量提示。HEIC/RAW 请先转换，最多 50 张、单文件 40 MB。
 
 ## 打印尺寸
 
@@ -32,4 +32,4 @@ python3 -m http.server 5173 --bind 0.0.0.0
 
 ## 浏览器交互回归
 
-有 Playwright 和 Chromium 的环境中，可运行 `PLAYWRIGHT_MODULE=/path/to/playwright CHROMIUM_PATH=/usr/bin/chromium node tests/browser.cjs`。先在另一终端启动本地开发服务。脚本验证鼠标操作、独立日期、高清 JPG 下载及手机布局。
+有 Playwright 和 Chromium 的环境中，可运行 `PLAYWRIGHT_MODULE=/path/to/playwright CHROMIUM_PATH=/usr/bin/chromium node tests/browser.cjs`。先在另一终端启动本地开发服务。脚本验证点击调整、画布拖拽和滚轮不修改照片、独立日期、高清 JPG 下载及手机布局。

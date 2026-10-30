@@ -338,6 +338,7 @@ for (const [id, key] of [
 ])
   $(id).oninput = () => {
     if (!photos[selected]) return;
+    if ($(id).value === "" || !$(id).checkValidity()) return;
     photos[selected][key] = key === "date" ? $(id).value : Number($(id).value);
     render();
   };
@@ -379,14 +380,6 @@ function saveFrame(i, r) {
     sy: r.h / b.h,
   };
 }
-function handlePoints(r) {
-  return [
-    [r.x, r.y],
-    [r.x + r.w, r.y],
-    [r.x, r.y + r.h],
-    [r.x + r.w, r.y + r.h],
-  ];
-}
 function drawSelection(ctx, boxes) {
   const r = boxes[selected];
   if (!r || !photos[selected]) return;
@@ -398,11 +391,6 @@ function drawSelection(ctx, boxes) {
   ctx.lineWidth = 1.5 * unit;
   ctx.setLineDash([]);
   ctx.strokeRect(r.x, r.y, r.w, r.h);
-  for (const [x, y] of handlePoints(r)) {
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(x - 4 * unit, y - 4 * unit, 8 * unit, 8 * unit);
-    ctx.strokeRect(x - 4 * unit, y - 4 * unit, 8 * unit, 8 * unit);
-  }
   ctx.restore();
 }
 function point(event) {
@@ -428,24 +416,6 @@ function hit(pos) {
   }
   return -1;
 }
-function handleHit(pos) {
-  const r = frameBoxes()[selected];
-  if (!r || !photos[selected]) return -1;
-  const tolerance =
-    (10 * dimensions().w) / canvas.getBoundingClientRect().width;
-  return handlePoints(r).findIndex(
-    ([x, y]) =>
-      Math.abs(pos.x - x) < tolerance && Math.abs(pos.y - y) < tolerance,
-  );
-}
-function imageOverflow(p, r) {
-  const ih = r.h - ($("polaroid").checked ? Math.min(9, r.h * 0.22) : 0),
-    rotated = p.rotation % 180 !== 0,
-    iw = rotated ? p.img.naturalHeight : p.img.naturalWidth,
-    ihh = rotated ? p.img.naturalWidth : p.img.naturalHeight;
-  const factor = Math.max(r.w / iw, ih / ihh) * p.zoom;
-  return { x: iw * factor - r.w, y: ihh * factor - ih };
-}
 function resetCrop() {
   const p = photos[selected];
   if (p) {
@@ -454,121 +424,46 @@ function resetCrop() {
     render();
   }
 }
-let gesture = null;
-canvas.addEventListener("pointerdown", (e) => {
-  if (e.button !== 0 || gesture) return;
-  const pos = point(e),
-    corner = handleHit(pos),
-    index = corner >= 0 ? selected : hit(pos);
-  if (index < 0) return;
-  e.preventDefault();
+canvas.addEventListener("click", (event) => {
+  const index = hit(point(event));
+  if (index < 0 || selected === index) return;
   selected = index;
-  const p = photos[index],
-    r = frameBoxes()[index];
-  gesture = {
-    id: e.pointerId,
-    index,
-    pos,
-    r: { ...r },
-    corner,
-    x: p.x,
-    y: p.y,
-    mode: corner >= 0 ? "resize" : e.shiftKey ? "frame" : $("drag-mode").value,
-    overflow: imageOverflow(p, r),
-  };
-  canvas.setPointerCapture(e.pointerId);
-  canvas.classList.add("dragging");
   list();
   render();
 });
-canvas.addEventListener("pointermove", (e) => {
-  const pos = point(e);
-  if (!gesture) {
-    const corner = handleHit(pos);
-    canvas.style.cursor =
-      corner >= 0
-        ? corner === 0 || corner === 3
-          ? "nwse-resize"
-          : "nesw-resize"
-        : hit(pos) >= 0
-          ? $("drag-mode").value === "frame"
-            ? "move"
-            : "grab"
-          : "default";
-    return;
-  }
-  if (e.pointerId !== gesture.id) return;
-  e.preventDefault();
-  const g = gesture,
-    p = photos[g.index],
-    dx = pos.x - g.pos.x,
-    dy = pos.y - g.pos.y;
-  if (!p) return;
-  const d = dimensions();
-  if (g.mode === "crop") {
-    p.x =
-      g.overflow.x > 0.001 ? clamp(g.x - (2 * dx) / g.overflow.x, -1, 1) : 0;
-    p.y =
-      g.overflow.y > 0.001 ? clamp(g.y - (2 * dy) / g.overflow.y, -1, 1) : 0;
-  } else if (g.mode === "frame") {
-    saveFrame(g.index, {
-      ...g.r,
-      x: clamp(g.r.x + dx, 0, d.w - g.r.w),
-      y: clamp(g.r.y + dy, 0, d.h - g.r.h),
-    });
-  } else {
-    const left = g.corner === 0 || g.corner === 2,
-      top = g.corner < 2;
-    const x1 = left
-        ? clamp(g.r.x + dx, 0, g.r.x + g.r.w - Math.min(6, g.r.w))
-        : g.r.x,
-      y1 = top
-        ? clamp(g.r.y + dy, 0, g.r.y + g.r.h - Math.min(6, g.r.h))
-        : g.r.y,
-      x2 = left
-        ? g.r.x + g.r.w
-        : clamp(g.r.x + g.r.w + dx, g.r.x + Math.min(6, g.r.w), d.w),
-      y2 = top
-        ? g.r.y + g.r.h
-        : clamp(g.r.y + g.r.h + dy, g.r.y + Math.min(6, g.r.h), d.h);
-    saveFrame(g.index, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 });
-  }
-  syncEditor();
-  render();
-});
-function finishGesture(e) {
-  if (!gesture || e.pointerId !== gesture.id) return;
-  gesture = null;
-  canvas.classList.remove("dragging");
-  if (canvas.hasPointerCapture(e.pointerId))
-    canvas.releasePointerCapture(e.pointerId);
+
+// All image adjustments are explicit button or numeric-field actions.
+for (const button of document.querySelectorAll("[data-adjust]")) {
+  button.onclick = () => {
+    const input = $(button.dataset.adjust);
+    const value = Number(input.value) + Number(button.dataset.delta);
+    input.value = clamp(
+      Number(value.toFixed(4)),
+      Number(input.min),
+      Number(input.max),
+    );
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    syncEditor();
+  };
 }
-for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
-  canvas.addEventListener(event, finishGesture);
-canvas.addEventListener(
-  "wheel",
-  (e) => {
-    const i = hit(point(e));
-    if (i < 0) return;
-    e.preventDefault();
-    selected = i;
-    const p = photos[i];
-    const delta =
-      e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
-    p.zoom = clamp(p.zoom * Math.exp(-delta * 0.0015), 1, 3);
-    list();
+for (const input of document.querySelectorAll(".stepper input"))
+  input.addEventListener("change", syncEditor);
+for (const button of document.querySelectorAll("[data-frame-move]")) {
+  button.onclick = () => {
+    if (!photos[selected] || !baseBoxes()[selected]) return;
+    const r = frameBoxes()[selected],
+      d = dimensions();
+    const axis = button.dataset.frameMove;
+    r[axis] = clamp(
+      r[axis] + Number(button.dataset.delta),
+      0,
+      axis === "x" ? d.w - r.w : d.h - r.h,
+    );
+    saveFrame(selected, r);
     render();
-  },
-  { passive: false },
-);
-canvas.addEventListener("dblclick", (e) => {
-  const i = hit(point(e));
-  if (i >= 0) {
-    selected = i;
-    resetCrop();
-    list();
-  }
-});
+    syncEditor();
+  };
+}
 $("photo-date-mode").onchange = () => {
   if (!photos[selected]) return;
   photos[selected].dateMode = $("photo-date-mode").value;
@@ -582,7 +477,7 @@ for (const [id, key] of [
   $(id).oninput = () => {
     const p = photos[selected],
       b = baseBoxes()[selected];
-    if (!p || !b) return;
+    if (!p || !b || $(id).value === "" || !$(id).checkValidity()) return;
     const r = frameBoxes()[selected],
       d = dimensions();
     if (key === "sx")

@@ -50,38 +50,47 @@ const assert = require("node:assert/strict");
     await page.locator(".photo.selected .name").textContent(),
     /photo-1/,
   );
+  const beforeDrag = await page
+    .locator("#preview")
+    .evaluate((c) => c.toDataURL());
   await page.mouse.move(a.x, a.y);
-  await page.mouse.wheel(0, -350);
-  assert.ok(Number(await page.locator("#zoom").inputValue()) > 1);
   await page.mouse.down();
-  await page.mouse.move(a.x + 22, a.y + 20, { steps: 6 });
+  await page.mouse.move(a.x + 20, a.y + 15, { steps: 8 });
   await page.mouse.up();
-  assert.notEqual(Number(await page.locator("#pan-x").inputValue()), 0);
-  const corner = pos(49, 73);
-  await page.mouse.move(corner.x, corner.y);
-  await page.mouse.down();
-  await page.mouse.move(corner.x - 30, corner.y - 30, { steps: 5 });
-  await page.mouse.up();
-  assert.ok(Number(await page.locator("#frame-width").inputValue()) < 1);
-  assert.ok(Number(await page.locator("#frame-height").inputValue()) < 1);
-  await page.locator("#drag-mode").selectOption("frame");
-  await page.locator("#preview").scrollIntoViewIfNeeded();
-  const movingRect = await page.locator("#preview").boundingBox();
-  const movingPoint = {
-    x: movingRect.x + movingRect.width * 0.25,
-    y: movingRect.y + (movingRect.height * 35) / 148,
-  };
+  assert.equal(
+    await page.locator("#preview").evaluate((c) => c.toDataURL()),
+    beforeDrag,
+    "dragging does not edit the image",
+  );
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 150);
+  await page.waitForFunction((y) => window.scrollY > y, scrollBefore);
+  assert.equal(
+    await page.locator("#zoom").inputValue(),
+    "1",
+    "wheel scrolls the page instead of zooming",
+  );
+  await page.getByRole("button", { name: "增大照片缩放", exact: true }).click();
+  assert.equal(await page.locator("#zoom").inputValue(), "1.1");
+  await page
+    .getByRole("button", { name: "增大裁切水平偏移", exact: true })
+    .click();
+  assert.equal(await page.locator("#pan-x").inputValue(), "0.05");
+  await page
+    .getByRole("button", { name: "减小相框宽度比例", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "减小相框高度比例", exact: true })
+    .click();
+  assert.equal(await page.locator("#frame-width").inputValue(), "0.95");
+  assert.equal(await page.locator("#frame-height").inputValue(), "0.95");
   const beforeMove = await page
     .locator("#preview")
     .evaluate((c) => c.toDataURL());
-  await page.mouse.move(movingPoint.x, movingPoint.y);
-  await page.mouse.down();
-  await page.mouse.move(movingPoint.x + 20, movingPoint.y + 15, { steps: 5 });
-  await page.mouse.up();
+  await page.getByRole("button", { name: "相框右移", exact: true }).click();
   assert.notEqual(
     await page.locator("#preview").evaluate((c) => c.toDataURL()),
     beforeMove,
-    "moving the frame changes the canvas",
   );
   await page.locator("#reset-frame").click();
   assert.equal(await page.locator("#frame-width").inputValue(), "1");
@@ -160,7 +169,7 @@ const assert = require("node:assert/strict");
   await page.screenshot({ path: "/tmp/selphy-new-mobile.png", fullPage: true });
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: selection, mouse pan, wheel zoom, corner resize, frame move/reset, per-photo dates show/hide, orange default, direct 2362×3496 JPEG, mobile layout",
+    "PASS: click selection, no drag/wheel editing, step buttons, frame position/reset, per-photo dates show/hide, orange default, direct 2362×3496 JPEG, mobile layout",
   );
   await browser.close();
 })().catch((e) => {

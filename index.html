@@ -122,7 +122,7 @@
           <div class="canvas-wrap">
             <canvas
               id="preview"
-              aria-label="照片拼图预览：拖动调整裁切，拖动角点改变相框大小，滚轮缩放"
+              aria-label="照片拼图预览：点击选择照片，在右侧按钮面板调整"
               tabindex="0"
             ></canvas>
             <div id="empty">
@@ -136,17 +136,9 @@
           <div class="stage-bottom">
             <span id="summary"></span><span>高清 JPG · 原图参与渲染</span>
           </div>
-          <div class="canvas-tools">
-            <label
-              >拖动方式<select id="drag-mode">
-                <option value="crop">调整照片裁切</option>
-                <option value="frame">移动照片相框</option>
-              </select></label
-            >
-            <p class="hint">
-              点击选中 · 拖动平移 · 滚轮缩放 · 角点调整大小 · 双击重置裁切
-            </p>
-          </div>
+          <p class="hint">
+            点击画布或右侧照片选中，再用右侧按钮调整位置、大小与缩放。
+          </p>
           <div class="notice">
             <b>留一点呼吸的空间</b>
             <p>
@@ -182,47 +174,186 @@
             <p class="hint">
               留空使用统一日期或 EXIF；单张隐藏不影响其他照片。
             </p>
-            <label
-              >缩放<input
+            <label for="zoom">照片缩放</label>
+            <div class="stepper">
+              <button
+                type="button"
+                class="secondary"
+                data-adjust="zoom"
+                data-delta="-0.1"
+                aria-label="减小照片缩放"
+              >
+                −</button
+              ><input
                 id="zoom"
-                type="range"
+                type="number"
                 min="1"
                 max="3"
-                step="0.01"
-                value="1" /></label
-            ><label
-              >水平位置<input
+                step="any"
+                value="1"
+                aria-label="照片缩放"
+              /><button
+                type="button"
+                class="secondary"
+                data-adjust="zoom"
+                data-delta="0.1"
+                aria-label="增大照片缩放"
+              >
+                ＋
+              </button>
+            </div>
+            <label for="pan-x">裁切水平偏移</label>
+            <div class="stepper">
+              <button
+                type="button"
+                class="secondary"
+                data-adjust="pan-x"
+                data-delta="-0.05"
+                aria-label="减小裁切水平偏移"
+              >
+                −</button
+              ><input
                 id="pan-x"
-                type="range"
+                type="number"
                 min="-1"
                 max="1"
-                step="0.01"
-                value="0" /></label
-            ><label
-              >垂直位置<input
+                step="any"
+                value="0"
+                aria-label="裁切水平偏移"
+              /><button
+                type="button"
+                class="secondary"
+                data-adjust="pan-x"
+                data-delta="0.05"
+                aria-label="增大裁切水平偏移"
+              >
+                ＋
+              </button>
+            </div>
+            <label for="pan-y">裁切垂直偏移</label>
+            <div class="stepper">
+              <button
+                type="button"
+                class="secondary"
+                data-adjust="pan-y"
+                data-delta="-0.05"
+                aria-label="减小裁切垂直偏移"
+              >
+                −</button
+              ><input
                 id="pan-y"
-                type="range"
+                type="number"
                 min="-1"
                 max="1"
-                step="0.01"
-                value="0" /></label
-            ><label
-              >相框宽度<input
+                step="any"
+                value="0"
+                aria-label="裁切垂直偏移"
+              /><button
+                type="button"
+                class="secondary"
+                data-adjust="pan-y"
+                data-delta="0.05"
+                aria-label="增大裁切垂直偏移"
+              >
+                ＋
+              </button>
+            </div>
+            <label for="frame-width">相框宽度比例</label>
+            <div class="stepper">
+              <button
+                type="button"
+                class="secondary"
+                data-adjust="frame-width"
+                data-delta="-0.05"
+                aria-label="减小相框宽度比例"
+              >
+                −</button
+              ><input
                 id="frame-width"
-                type="range"
+                type="number"
                 min="0.3"
                 max="2"
-                step="0.01"
-                value="1" /></label
-            ><label
-              >相框高度<input
+                step="any"
+                value="1"
+                aria-label="相框宽度比例"
+              /><button
+                type="button"
+                class="secondary"
+                data-adjust="frame-width"
+                data-delta="0.05"
+                aria-label="增大相框宽度比例"
+              >
+                ＋
+              </button>
+            </div>
+            <label for="frame-height">相框高度比例</label>
+            <div class="stepper">
+              <button
+                type="button"
+                class="secondary"
+                data-adjust="frame-height"
+                data-delta="-0.05"
+                aria-label="减小相框高度比例"
+              >
+                −</button
+              ><input
                 id="frame-height"
-                type="range"
+                type="number"
                 min="0.3"
                 max="2"
-                step="0.01"
-                value="1" /></label
-            ><button id="reset-frame" class="secondary">
+                step="any"
+                value="1"
+                aria-label="相框高度比例"
+              /><button
+                type="button"
+                class="secondary"
+                data-adjust="frame-height"
+                data-delta="0.05"
+                aria-label="增大相框高度比例"
+              >
+                ＋
+              </button>
+            </div>
+            <p class="hint">
+              裁切偏移为 −1 至 1，0 为居中。缩放 1 为铺满相框。
+            </p>
+            <label>相框位置（每次 0.5 mm）</label>
+            <div class="frame-position">
+              <button
+                type="button"
+                class="secondary"
+                data-frame-move="x"
+                data-delta="-0.5"
+                aria-label="相框左移"
+              >
+                ←</button
+              ><button
+                type="button"
+                class="secondary"
+                data-frame-move="y"
+                data-delta="-0.5"
+                aria-label="相框上移"
+              >
+                ↑</button
+              ><button
+                type="button"
+                class="secondary"
+                data-frame-move="y"
+                data-delta="0.5"
+                aria-label="相框下移"
+              >
+                ↓</button
+              ><button
+                type="button"
+                class="secondary"
+                data-frame-move="x"
+                data-delta="0.5"
+                aria-label="相框右移"
+              >
+                →
+              </button>
+            </div>
+            <button id="reset-frame" class="secondary">
               恢复版式位置与大小</button
             ><button id="rotate" class="secondary">↻ 旋转 90°</button
             ><button id="reset" class="text-button">重置裁切</button>
